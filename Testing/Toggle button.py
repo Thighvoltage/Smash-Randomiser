@@ -1,9 +1,11 @@
 from tkinter import *
 from PIL import Image, ImageTk
+import os
+import os.path
 
 root = Tk()
 
-image = Image.open("D:\Pictures\Memes\\69 Reddit Karma.PNG")
+image = Image.open(os.getcwd()+"\\Character Icons\\"+"1-Mario.png")
 photo = ImageTk.PhotoImage(image)
 
 

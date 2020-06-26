@@ -29,6 +29,7 @@ class GUI:
         COLOUR_TEXT = "white"
 
         self.master = master
+        self.master.configure(bg = COLOUR_BG)
 
         self.frame_characters = Frame(master, bg = COLOUR_BG)
         self.frame_characters.grid(row = 0, column = 0, columnspan = 2,
@@ -167,7 +168,7 @@ def main():
 
     global root
     root = Tk()
-    root.configure(bg = "gray15")
+    #root.configure(bg = "gray15")
     characters_get()
     root.title("Smash Randomiser")
     app = GUI(root)
