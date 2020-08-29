@@ -1,24 +1,32 @@
 from tkinter import *
 from PIL import Image, ImageTk
 import os
-# import os.path
+from pathlib import Path
 import pickle
-from random import randint
+from random import randrange
 from winsound import PlaySound, SND_FILENAME, SND_ASYNC
 
 characters = []
-
+errors = []
 
 class Character:
-    def __init__(self, num, name, image, photo, icon, portrait, display, dark):
+    def __init__(self, num, name, filename, image, photo, icon, portrait,
+                 display, dark):
         self.num = num
         self.name = name
+        self.filename = filename
         self.image = image
         self.photo = photo
         self.icon = icon
         self.portrait = portrait
         self.display = display
         self.dark = dark
+
+
+class Error:
+    def __init__(self, name, photo):
+        self.name = name
+        self.photo = photo
 
 
 class GUI:
@@ -37,10 +45,14 @@ class GUI:
         self.init_option_frame()
         self.init_portrait_frame()
 
+        self.master.columnconfigure(0, weight=1)
+        self.master.rowconfigure(1, weight=1)
+        self.master.rowconfigure(2, weight=1)
+
     def init_icon_frame(self):
         """Initialises and fills the icon frame."""
-        self.icon_frame = Frame(self.master, background=self.BG_COLOUR)
-        self.icon_frame.grid(row=0, column=0, columnspan=2, sticky="nesw")
+        self.icon_frame = Frame(self.master, bg=self.BG_COLOUR)
+        self.icon_frame.grid(row=0, column=0, sticky=N)
         self.display_icons()
 
     def display_icons(self):
@@ -75,33 +87,33 @@ class GUI:
         LOAD_TEXT = "Load Preset"
 
         self.option_frame = Frame(self.master, bg=self.BG_COLOUR)
-        self.option_frame.grid(row=1, column=1, sticky=NW)
+        self.option_frame.grid(row=1, column=0, sticky=N)
 
         self.select_button = Button(
             self.option_frame, text=SELECT_TEXT, command=self.select_character,
             width=20, height=1, font=self.FONT, fg=self.TEXT_COLOUR,
             bg=self.BG_COLOUR2, activebackground=self.BG_COLOUR2,
             activeforeground=self.TEXT_COLOUR)
-        self.select_button.grid(row=0, column=2, sticky=NW)
+        self.select_button.grid(row=0, column=2, sticky=N)
 
         self.all_button = clone_widget(
             self.select_button, ALL_TEXT, self.select_all, width=10, height=1)
-        self.all_button.grid(row=0, column=1, sticky=NW)
+        self.all_button.grid(row=0, column=1, sticky=N)
 
         self.none_button = clone_widget(
             self.select_button, NONE_TEXT, self.deselect_all, width=10,
             height=1)
-        self.none_button.grid(row=0, column=3, sticky=NW)
+        self.none_button.grid(row=0, column=3, sticky=N)
 
         self.save_button = clone_widget(
             self.select_button, SAVE_TEXT, self.save_preset, width=10,
             height=1)
-        self.save_button.grid(row=0, column=0, sticky=NW)
+        self.save_button.grid(row=0, column=0, sticky=N)
 
         self.load_button = clone_widget(
             self.select_button, LOAD_TEXT, self.load_preset, width=10,
             height=1)
-        self.load_button.grid(row=0, column=4, sticky=NW)
+        self.load_button.grid(row=0, column=4, sticky=N)
 
         self.label = Label(
             self.option_frame, bg=self.BG_COLOUR, fg=self.TEXT_COLOUR,
@@ -173,62 +185,48 @@ class GUI:
 
             self.label.configure(text="Loaded!")
 
-    def init_portrait_frame(self):
-        """Initialises the portrait frame."""
-        self.portrait_frame = Frame(self.master, bg=self.BG_COLOUR)
-        self.portrait_frame.grid(row=1, column=0, sticky=NW)
-
     def select_character(self):
         """TBW
         """
         pool = [characters[i]
                 for i in range(len(characters)) if characters[i].dark is False]
         try:
-            selection = randint(1, len(pool)) - 1
+            selection = randrange(len(pool))
         except ValueError:
-            self.label.configure(text="Select a character silly!")
-            if randint(0, 1) == 0:
-                PlaySound(os.getcwd() + "\\Sound Effects\\Hey.wav",
-                          SND_FILENAME | SND_ASYNC)
-            else:
-                PlaySound(os.getcwd() + "\\Sound Effects\\Listen.wav",
-                          SND_FILENAME | SND_ASYNC)
+            self.display_error()
         else:
+            PlaySound(str(Path("Characters/Announcer Clips/"
+                      + pool[selection].filename[:-4] + ".wav")),
+                      SND_FILENAME | SND_ASYNC)
             self.label.configure(text=pool[selection].name)
-            PlaySound(
-                os.getcwd() + "\\Announcer Clips\\" + str(pool[selection].num)
-                + "-" + pool[selection].name + ".wav",
-                SND_FILENAME | SND_ASYNC)
+            self.display_portrait(pool[selection])
 
+    def display_error(self):
+        """Sets portrait_label to Navi, plays Navi sound effect, and changes
+           the response label.
+        """
+        selection = randrange(len(errors))
+        PlaySound(str(Path("Errors/Sounds/" + errors[selection].name + ".wav")), SND_FILENAME | SND_ASYNC)
 
-def get_characters():
-    """Gets the image and name data for each character then creates a
-       class for each.
-    """
-    icon_names = [name for name in
-                  os.listdir(os.getcwd() + "\\Character Icons")]
-    portrait_names = [name for name in
-                      os.listdir(os.getcwd() + "\\Character Portraits")]
+        self.portrait_label.configure(image=errors[selection].photo)
+        self.label.configure(text="Select a character silly!")
 
-    for i, name in enumerate(icon_names):
-        image = Image.open(os.getcwd() + "\\Character Icons\\" + name)
-        photo = ImageTk.PhotoImage(image)
-        # portrait_image = Image.open(
-        #    os.getcwd()+"\\Character Portraits\\"+str(name))
-        # portrait_photo = ImageTk.PhotoImage(portrait_image)
+    def init_portrait_frame(self):
+        """Initialises the portrait frame."""
+        self.portrait_frame = Frame(self.master, bg=self.BG_COLOUR)
+        self.portrait_frame.grid(row=2, column=0, sticky=N)
 
-        num_and_name = character_num_and_name(icon_names[i])
-        characters.append(Character(num_and_name[0], num_and_name[1],
-                                    image, photo, None, None, None, False))
-    characters.sort(key=lambda x: x.num)
+        self.portrait_label = Label(
+            self.portrait_frame, background=self.BG_COLOUR)
+        self.portrait_label.grid(row=0, column=0)
 
-
-def character_num_and_name(icon_name):
-    """Returns [num, name] for """
-    num_and_name = icon_name.split("-")
-    num_and_name[0] = int(num_and_name[0])
-    num_and_name[1] = num_and_name[1].replace(".png", "")
-    return num_and_name
+    def display_portrait(self, character):
+        """asd"""
+        if character.portrait is None:
+            portrait_image = Image.open(
+                Path("Characters/Portraits/" + character.filename))
+            character.portrait = ImageTk.PhotoImage(portrait_image)
+        self.portrait_label.configure(image=character.portrait)
 
 
 def clone_widget(widget, text=None, command=None, width=None, height=None):
@@ -246,13 +244,50 @@ def clone_widget(widget, text=None, command=None, width=None, height=None):
     return clone
 
 
+def get_characters():
+    """Gets the image and name data for each character then creates a
+       class for each.
+    """
+    icon_names = [name for name in os.listdir("Characters/Icons")]
+    portrait_names = [name for name in os.listdir("Characters/Portraits")]
+
+    for i, name in enumerate(icon_names):
+        image = Image.open(Path("Characters/Icons/" + name))
+        photo = ImageTk.PhotoImage(image)
+
+        filename = name
+        num_and_name = character_num_and_name(icon_names[i])
+        characters.append(Character(num_and_name[0], num_and_name[1], filename,
+                                    image, photo, None, None, None, False))
+    characters.sort(key=lambda x: x.num)
+
+
+def character_num_and_name(icon_name):
+    """Returns [num, name] for a string of the format 'num-name.png' where
+       .png can be any four character file extension (including '.').
+    """
+    num_and_name = icon_name.split("-")
+    num_and_name[0] = int(num_and_name[0])
+    num_and_name[1] = num_and_name[1][:-4]
+    return num_and_name
+
+
+def get_errors():
+    """asd"""
+    for name in os.listdir(Path("Errors/Images")):
+        image = Image.open(Path("Errors/Images/" + name))
+        photo = ImageTk.PhotoImage(image)
+        errors.append(Error(name[:-4], photo))
+
+
 def main():
     """Runs the GUI and assigns it a name.
     """
     root = Tk()
     get_characters()
+    get_errors()
     root.title("Smash Randomiser")
-    root.iconbitmap(os.getcwd() + "\\Images\\" + "Smash ball.ico")
+    root.iconbitmap(Path("Images/" + "Smash ball.ico"))
     app = GUI(root)
     root.mainloop()
 
